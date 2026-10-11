@@ -24,8 +24,8 @@ Follow these steps to clone and run this project locally on your machine.
 
 ### 1. Clone the Repository
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL_HERE>
-cd <YOUR_PROJECT_FOLDER_NAME>
+git clone https://github.com/XbatzoX/Kanmind.git
+
 ```
 
 ### 2. Setup the Virtual Environment

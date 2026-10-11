@@ -1,0 +1,1724 @@
+{
+  "info": {
+    "_postman_id": "c8ca22bc-96fb-439c-a1d7-e5d8c1b87415",
+    "name": "Kanmind-API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "56710093",
+    "_collection_link": "https://go.postman.co/collection/56710093-c8ca22bc-96fb-439c-a1d7-e5d8c1b87415?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "happy path",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "register_user",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const firstName = pm.variables.replaceIn(\"{{$randomFirstName}}\");\r\nconst lastName = pm.variables.replaceIn(\"{{$randomLastName}}\");\r\nconst email = pm.variables.replaceIn(\"{{$randomEmail}}\");\r\n\r\nconst fullName = `${firstName} ${lastName}`;\r\n\r\npm.environment.set(\"fullname\", fullName);\r\npm.environment.set(\"mail\", email);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 201 bei erfolgreicher Registrierung\", () => {\r\n    RESPONSE.to.have.status(201);\r\n});\r\n\r\npm.test(\"Resgistrierung erfolgreich: Token und email validiert\", () => {\r\n    const responseData = pm.response.json();\r\n\r\n    // Prüfen, ob der Status created ist 201\r\n    pm.expect(pm.response.code).to.eql(201);\r\n\r\n    // Prüfen, ob das Token im response existiert und ein string ist\r\n    pm.expect(responseData.token).to.be.exist;\r\n    pm.expect(responseData.token).to.be.a('string');\r\n\r\n    // Prüfen, ob die mail im response mitgesendet wurde\r\n    pm.expect(responseData.email).to.be.exist;\r\n    pm.expect(responseData.email).to.be.a('string');\r\n    pm.expect(responseData.email).to.eql(pm.environment.get(\"mail\")); // Vergleicht die email aus dem response mit der email aus dem environment\r\n\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"fullname\": \"{{fullname}}\",\r\n  \"email\": \"{{mail}}\",\r\n  \"password\": \"examplePassword\",\r\n  \"repeated_password\": \"examplePassword\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/registration/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "registration",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "login_user",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 200 bei erfolgreichem login\", () => {\r\n    RESPONSE.to.have.status(200);\r\n})\r\n\r\npm.test(\"Token ist übergeben worden bei erfolgreichem login\", () => {\r\n    try{\r\n        const RESPONSEJSON = RESPONSE.json();\r\n        pm.expect(RESPONSEJSON).to.have.property(\"token\");\r\n        // Wenn Prüfungen erfolgreich, dann token in Env sichern\r\n        pm.environment.set(\"user_token\", RESPONSEJSON.token); // Speichert den token in der Umgebungsvariable user_token\r\n\r\n        console.log(\"Token erfolgreich automatisert gespeichert: \" + pm.environment.get(\"user_token\"));\r\n    } catch (error){\r\n        pm.expect.fail(\"Response ist kein valides JSON \" + error);\r\n    }\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"email\": \"{{mail}}\",\r\n  \"password\": \"examplePassword\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/login/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "login",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Kanmind",
+          "item": [
+            {
+              "name": "boards_list",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 200 bei erfolgreicher Abfrage\", () => {\r\n    RESPONSE.to.have.status(200);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 200){\r\n        pm.expect.fail(\"Abfrage fehlgeschlagen, Statuscode ist nicht 200\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('array');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}api/boards/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "boards_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 200 bei erfolgreicher Abfrage\", () => {\r\n    RESPONSE.to.have.status(200);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 200){\r\n        pm.expect.fail(\"Abfrage fehlgeschlagen, Statuscode ist nicht 200\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('object');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/boards/8",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    "8"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "boards_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 204 bei erfolgreicher Löschung\", () => {\r\n    RESPONSE.to.have.status(204);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 204){\r\n        pm.expect.fail(\"Abfrage fehlgeschlagen, Statuscode ist nicht 204\");\r\n        return;\r\n    }\r\n    const resonseText = RESPONSE.text();\r\n    pm.expect(resonseText).to.be.empty;\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/boards/10/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    "10",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "boards_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 200 bei erfolgreicher Abfrage\", () => {\r\n    RESPONSE.to.have.status(200);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 200){\r\n        pm.expect.fail(\"Abfrage fehlgeschlagen, Statuscode ist nicht 200\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('object');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n \"title\" : \"changed title again\" \r\n\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/boards/8/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    "8",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "boards_list",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Board wurde erfolgreich erstellt\", () => {\r\n    RESPONSE.to.have.status(201);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 201){\r\n        pm.expect.fail(\"Erstellung fehlgeschlagen, Statuscode ist nicht 201\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('object');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"title\": \"Delete Board von id 11\",\r\n  \"members\": [\r\n    2,\r\n    5,\r\n    1,\r\n    7\r\n  ]\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/boards/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "email-check",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 200 bei erfolgreicher Abfrage\", () => {\r\n    RESPONSE.to.have.status(200);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 200){\r\n        pm.expect.fail(\"Abfrage fehlgeschlagen, Statuscode ist nicht 200\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('object');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}api/email-check/?email=Alena.Bayer71@yahoo.com",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "email-check",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "key": "email",
+                      "value": "Alena.Bayer71@yahoo.com"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "tasks",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 201 bei erfolgreicher Erstellung des tasks\", () => {\r\n    RESPONSE.to.have.status(201);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 201){\r\n        pm.expect.fail(\"Erstellen fehlgeschlagen, Statuscode ist nicht 201\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('object');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"board\": 8,\r\n  \"title\": \"reviewer 11 zuweisen nochmal nach Änderung\",\r\n  \"description\": \"Den neuen PR für das Feature X überprüfen\",\r\n  \"status\": \"review\",\r\n  \"priority\": \"medium\",\r\n  \"assignee_id\": 7,\r\n  \"reviewer_id\": 11,\r\n  \"due_date\": \"2027-02-27\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "tasks_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 200 bei erfolgreicher Aktualisierung des tasks\", () => {\r\n    RESPONSE.to.have.status(200);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 200){\r\n        pm.expect.fail(\"Aktualisierung fehlgeschlagen, Statuscode ist nicht 200\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('object');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"title\" : \"Changed title PATCH finished\",\r\n    \"reviewer_id\" : 11\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/13/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "13",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "tasks_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 204 bei erfolgreicher Löschung\", () => {\r\n    RESPONSE.to.have.status(204);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 204){\r\n        pm.expect.fail(\"Abfrage fehlgeschlagen, Statuscode ist nicht 204\");\r\n        return;\r\n    }\r\n    const resonseText = RESPONSE.text();\r\n    pm.expect(resonseText).to.be.empty;\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/13/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "13",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "tasks_assigned_to_me",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 200 bei erfolgreicher Abfrage\", () => {\r\n    RESPONSE.to.have.status(200);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 200){\r\n        pm.expect.fail(\"Abfrage fehlgeschlagen, Statuscode ist nicht 200\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('array');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}} "
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}api/tasks/assigned-to-me/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "assigned-to-me",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "tasks_reviewing",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 200 bei erfolgreicher Abfrage\", () => {\r\n    RESPONSE.to.have.status(200);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 200){\r\n        pm.expect.fail(\"Abfrage fehlgeschlagen, Statuscode ist nicht 200\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('array');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}} "
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}api/tasks/reviewing/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "reviewing",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "task_comments",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 200 bei erfolgreicher Abfrage\", () => {\r\n    RESPONSE.to.have.status(200);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 200){\r\n        pm.expect.fail(\"Abfrage fehlgeschlagen, Statuscode ist nicht 200\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('array');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}api/tasks/12/comments/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "12",
+                    "comments",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "task_comments",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 201 bei erfolgreicher Erstellung des tasks\", () => {\r\n    RESPONSE.to.have.status(201);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 201){\r\n        pm.expect.fail(\"Erstellen fehlgeschlagen, Statuscode ist nicht 201\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('object');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"content\": \"Das ist ein weierer Kommentar zur Task 12.\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/12/comments/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "12",
+                    "comments",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "task_comments",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 200 bei erfolgreicher Abfrage\", () => {\r\n    RESPONSE.to.have.status(200);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 200){\r\n        pm.expect.fail(\"Abfrage fehlgeschlagen, Statuscode ist nicht 200\");\r\n        return;\r\n    }\r\n    const resonseJson = RESPONSE.json();\r\n    pm.expect(resonseJson).to.be.an('array');\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/12/comments/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "12",
+                    "comments",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "task_comments",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 204 bei erfolgreicher Löschung\", () => {\r\n    RESPONSE.to.have.status(204);\r\n})\r\n\r\n//Strukturvalidierung\r\npm.test(\"Struktur der Antwort ist korrekt\", () => {\r\n    if(RESPONSE.code != 204){\r\n        pm.expect.fail(\"Abfrage fehlgeschlagen, Statuscode ist nicht 204\");\r\n        return;\r\n    }\r\n    const resonseText = RESPONSE.text();\r\n    pm.expect(resonseText).to.be.empty;\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/12/comments/5/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "12",
+                    "comments",
+                    "5",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "unhappy path",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "500 register_user",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const firstName = pm.variables.replaceIn(\"{{$randomFirstName}}\");\r\nconst lastName = pm.variables.replaceIn(\"{{$randomLastName}}\");\r\nconst email = pm.variables.replaceIn(\"{{$randomEmail}}\");\r\n\r\nconst fullName = `${firstName} ${lastName}`;\r\n\r\npm.environment.set(\"fullname\", fullName);\r\npm.environment.set(\"mail\", email);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 500. Internal server error aufgetreten\", () => {\r\n    RESPONSE.to.have.status(500);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"fullname\": \"{{fullname}}\",\r\n  \"email\": \"{{mail}}\",\r\n  \"password\": \"examplePassword\",\r\n  \"repeated_password\": \"examplePassword\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/registration",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "registration"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "400 login_user",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 400 bei unterschiedlichem Passwort in der Registrierung\", () => {\r\n    RESPONSE.to.have.status(400);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"email\": \"{{mail}}\",\r\n  \"password\": \"examplePasswor\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/login/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "login",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "500 register_user",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const firstName = pm.variables.replaceIn(\"{{$randomFirstName}}\");\r\nconst lastName = pm.variables.replaceIn(\"{{$randomLastName}}\");\r\nconst email = pm.variables.replaceIn(\"{{$randomEmail}}\");\r\n\r\nconst fullName = `${firstName} ${lastName}`;\r\n\r\npm.environment.set(\"fullname\", fullName);\r\npm.environment.set(\"mail\", email);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 500. Internal server error aufgetreten\", () => {\r\n    RESPONSE.to.have.status(500);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"fullname\": \"{{fullname}}\",\r\n  \"email\": \"{{mail}}\",\r\n  \"password\": \"examplePassword\",\r\n  \"repeated_password\": \"examplePasswor\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/registration",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "registration"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "400 register_user",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const firstName = pm.variables.replaceIn(\"{{$randomFirstName}}\");\r\nconst lastName = pm.variables.replaceIn(\"{{$randomLastName}}\");\r\nconst email = pm.variables.replaceIn(\"{{$randomEmail}}\");\r\n\r\nconst fullName = `${firstName} ${lastName}`;\r\n\r\npm.environment.set(\"fullname\", fullName);\r\npm.environment.set(\"mail\", email);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 400 bei unterschiedlichem Passwort in der Registrierung\", () => {\r\n    RESPONSE.to.have.status(400);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"fullname\": \"{{fullname}}\",\r\n  \"email\": \"{{mail}}\",\r\n  \"password\": \"examplePassword\",\r\n  \"repeated_password\": \"examplePasswor\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/registration/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "registration",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Kanmind",
+          "item": [
+            {
+              "name": "401 boards_list",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 401 Unautorized\", () => {\r\n    RESPONSE.to.have.status(401);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}",
+                    "disabled": true
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}api/boards/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "400 boards_list",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 400 bei ungültiger Anfrage\", () => {\r\n    RESPONSE.to.have.status(400);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"titles\": \"Delete Board von id 11\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/boards/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "401 boards_list",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 401 Unautorized\", () => {\r\n    RESPONSE.to.have.status(401);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}",
+                    "disabled": true
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"title\": \"Delete Board von id 11\",\r\n  \"members\": [\r\n    2,\r\n    5,\r\n    1,\r\n    7\r\n  ]\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/boards/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "401 boards_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 401 Unautorized\", () => {\r\n    RESPONSE.to.have.status(401);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}",
+                    "disabled": true
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/boards/8/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    "8",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "403 boards_detail fault",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 403 Forbidden\", () => {\r\n    RESPONSE.to.have.status(403);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/boards/4/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    "4",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "400 boards_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 400 bei ungültiger Anfrage\", () => {\r\n    RESPONSE.to.have.status(400);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n \"members\" : [1, 7,111]\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/boards/8/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    "8",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "401 boards_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 401 bei unauthoriserter Anfrage\", () => {\r\n    RESPONSE.to.have.status(401);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}",
+                    "disabled": true
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n \"members\" : [1, 7,11]\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/boards/8/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    "8",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "404 boards_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 403 bei unerlaubter Anfrage\", () => {\r\n    RESPONSE.to.have.status(403);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n \"members\" : [1, 7,11]\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/boards/44/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "boards",
+                    "44",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "400 email-check",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 400 bei ungültiger Anfrage\", () => {\r\n    RESPONSE.to.have.status(400);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}api/email-check/?email=",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "email-check",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "key": "email",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "401 email-check",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 401 bei unauthoriserter Anfrage\", () => {\r\n    RESPONSE.to.have.status(401);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}",
+                    "disabled": true
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}api/email-check/?email=Alena.Bayer71@yahoo.com",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "email-check",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "key": "email",
+                      "value": "Alena.Bayer71@yahoo.com"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "404 email-check",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 404 bei nicht gefundener mail\", () => {\r\n    RESPONSE.to.have.status(404);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}api/email-check/?email=Alena.Bayer31@yahoo.com",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "email-check",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "key": "email",
+                      "value": "Alena.Bayer31@yahoo.com"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "401 tasks_assigned_to_me",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 401 bei unauthoriserter Anfrage\", () => {\r\n    RESPONSE.to.have.status(401);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}} ",
+                    "disabled": true
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}api/tasks/assigned-to-me/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "assigned-to-me",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "401 tasks_reviewing",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 401 bei unauthoriserter Anfrage\", () => {\r\n    RESPONSE.to.have.status(401);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}} ",
+                    "disabled": true
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}api/tasks/reviewing/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "reviewing",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "400 tasks",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 400 bei ungültiger Anfrage\", () => {\r\n    RESPONSE.to.have.status(400);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"board\": 8,\r\n  \r\n  \"description\": \"Den neuen PR für das Feature X überprüfen\",\r\n  \"status\": \"review\",\r\n  \"priority\": \"medium\",\r\n  \"assignee_id\": 7,\r\n  \"reviewer_id\": 11,\r\n  \"due_date\": \"2027-02-27\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "401 tasks",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 401 bei unauthoriserter Anfrage\", () => {\r\n    RESPONSE.to.have.status(401);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}",
+                    "disabled": true
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"board\": 8,\r\n  \"title\": \"reviewer 11 zuweisen nochmal\",\r\n  \"description\": \"Den neuen PR für das Feature X überprüfen\",\r\n  \"status\": \"review\",\r\n  \"priority\": \"medium\",\r\n  \"assignee_id\": 7,\r\n  \"reviewer_id\": 11,\r\n  \"due_date\": \"2027-02-27\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "403 tasks",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 403 Forbidden\", () => {\r\n    RESPONSE.to.have.status(403);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"board\": 4,\r\n  \"title\": \"reviewer 11 zuweisen nochmal\",\r\n  \"description\": \"Den neuen PR für das Feature X überprüfen\",\r\n  \"status\": \"review\",\r\n  \"priority\": \"medium\",\r\n  \"assignee_id\": 7,\r\n  \"reviewer_id\": 11,\r\n  \"due_date\": \"2027-02-27\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "400 tasks_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 400 bei ungültiger Anfrage\", () => {\r\n    RESPONSE.to.have.status(400);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"titles\" : \"Changed title PATCH finished\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/15/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "15",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "401 tasks_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 401 bei unauthoriserter Anfrage\", () => {\r\n    RESPONSE.to.have.status(401);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}",
+                    "disabled": true
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"title\" : \"Changed title PATCH finished\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/15/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "15",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "403 tasks_detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const RESPONSE = pm.response;\r\n\r\npm.test(\"Statuscode ist 401 bei unauthoriserter Anfrage\", () => {\r\n    RESPONSE.to.have.status(401);\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Token {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"title\" : \"Changed title PATCH finished\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}api/tasks/5/",
+                  "host": [
+                    "{{base_url}}api"
+                  ],
+                  "path": [
+                    "tasks",
+                    "5",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

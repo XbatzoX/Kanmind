@@ -67,9 +67,7 @@ class TaskSerializer(serializers.ModelSerializer):
     assignee = TaskUserSerializer(read_only=True)
     reviewer = TaskUserSerializer(read_only=True)
     comments_count = serializers.SerializerMethodField()
-    board = serializers.PrimaryKeyRelatedField(
-        queryset = Board.objects.all()
-    )
+    board = serializers.IntegerField(write_only=True)
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset = User.objects.all(), write_only=True, required=False, allow_null=True
     )

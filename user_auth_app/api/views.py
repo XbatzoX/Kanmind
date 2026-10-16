@@ -26,7 +26,7 @@ class RegistrationView(APIView):
             return Response(data, status=status.HTTP_201_CREATED)
         else:
             data = serializer.errors
-            return Response(data)
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
 class CustomerLoginView(ObtainAuthToken):
     """Provides a public login endpoint utilizing email-based credentials to generate auth tokens."""

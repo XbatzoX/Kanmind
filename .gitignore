@@ -59,3 +59,6 @@ Thumbs.db
 
 # Frontend
 Frontend/
+
+# Migrations
+**/migrations/000*.py

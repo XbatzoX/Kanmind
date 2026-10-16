@@ -3,7 +3,8 @@ from django.db import models
 from kanban_app.models import Board, Task, Comment
 from .serializers import BoardListSerializer, TaskSerializer, BoardDetailSerializer, TaskUserSerializer, \
     TaskDetailSerializer, CommentSerializer, BoardUpdateSerializer
-from .permissions import IsCommentAuthor, IsBoardOwnerOrReadOnlyForMembers, IsBoardOwnerOrTaskCreatorOnly
+from .permissions import IsCommentAuthor, IsBoardOwnerOrReadOnlyForMembers, \
+    IsBoardMemberOrOwnerForTask
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -40,7 +41,10 @@ class TaskListView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         """Validates board membership and assigns the logged-in user as the task creator."""
         board_id = self.request.data.get("board")
-        board = get_object_or_404(Board, id=board_id)
+        try:
+            board = Board.objects.get(id=board_id)
+        except Board.DoesNotExist:
+            raise NotFound(detail="Board not found.")
         if board.owner != self.request.user and not board.members.filter(id=self.request.user.id).exists():
             raise PermissionDenied(detail="Forbbiden for this board")
         serializer.save(creator=self.request.user, board=board)
@@ -48,7 +52,6 @@ class TaskListView(generics.ListCreateAPIView):
 class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Handles retrieving, updating, or deleting a specific board instance based on permissions."""
     permission_classes = [IsAuthenticated, IsBoardOwnerOrReadOnlyForMembers]
-
     http_method_names = ["get", "patch", "delete", "head", "options"]
 
     def get_serializer_class(self):
@@ -58,9 +61,8 @@ class BoardDetailView(generics.RetrieveUpdateDestroyAPIView):
         return BoardDetailSerializer
 
     def get_queryset(self):
-        """Filters boards so users can only access ones they own or are members of."""
-        user = self.request.user
-        return Board.objects.filter(models.Q(owner=user) | models.Q(members=user)).distinct()
+        """Returns all boards to allow object-level permission checking (403 Forbidden)."""
+        return Board.objects.all()
 
 class EmailCheckView(APIView):
     """Provides an endpoint to verify if a user exists by checking their email address."""
@@ -80,15 +82,14 @@ class EmailCheckView(APIView):
 
 class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Handles retrieving, updating, or deleting a specific task instance based on board and task permissions."""
-    permission_classes = [IsAuthenticated, IsBoardOwnerOrTaskCreatorOnly]
+    permission_classes = [IsAuthenticated, IsBoardMemberOrOwnerForTask]
     serializer_class = TaskDetailSerializer
 
     http_method_names = ["get", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
-        """Filters tasks so users can only access ones belonging to their owned or joined boards."""
-        user = self.request.user
-        return Task.objects.filter(models.Q(board__owner = user) | models.Q(board__members = user)).distinct()
+        """Returns all tasks to allow object-level permission checking (403 Forbidden)."""
+        return Task.objects.all()
 
     def perform_create(self, serializer):
         """Ensures the logged-in user is set as the task creator during instantiation."""

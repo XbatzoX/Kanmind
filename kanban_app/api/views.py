@@ -5,7 +5,7 @@ from .serializers import BoardListSerializer, TaskSerializer, BoardDetailSeriali
     TaskDetailSerializer, CommentSerializer, BoardUpdateSerializer
 from .permissions import IsCommentAuthor, IsBoardOwnerOrReadOnlyForMembers, \
     IsBoardMemberOrOwnerForTask
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView
@@ -13,6 +13,7 @@ from rest_framework.exceptions import PermissionDenied, NotFound
 from django.contrib.auth.models import User
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+
 
 class BoardListView(generics.ListCreateAPIView):
     """Handles listing existing boards for the user and creating new boards."""

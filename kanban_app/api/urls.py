@@ -1,9 +1,10 @@
-from django.urls import path
-from .views import BoardListView, TaskListView, BoardDetailView, EmailCheckView, TaskDetailView, \
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import BoardListView, TaskListView, BoardDetailView, TaskDetailView, EmailCheckView, \
     CommentListCreateView, CommentDestroyView, UserTasksListView, ReviewedTasksListView
 
 urlpatterns = [
-    path('boards/', BoardListView.as_view(), name='boards-list'),
+    path('boards/', BoardListView.as_view(), name="boards-list"),
     path('tasks/', TaskListView.as_view(), name="tasks-list"),
     path('boards/<int:pk>/', BoardDetailView.as_view(), name="board-detail"),
     path('email-check/', EmailCheckView.as_view(), name="email-check"),

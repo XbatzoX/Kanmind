@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import NotFound
 from kanban_app.models import Board, Task, Comment
 from django.contrib.auth.models import User
 
@@ -62,15 +63,14 @@ class BoardTaskSerializer(serializers.ModelSerializer):
         return 0
     
 
-class TaskSerializer(serializers.ModelSerializer):
+class TaskSerializer(BoardTaskSerializer):
     """Serializes full task objects with primary key relation handling for assignments."""
-    assignee = TaskUserSerializer(read_only=True)
-    reviewer = TaskUserSerializer(read_only=True)
-    comments_count = serializers.SerializerMethodField()
-    board = serializers.IntegerField(write_only=True)
+    board = serializers.PrimaryKeyRelatedField(queryset=Board.objects.all())
+
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset = User.objects.all(), write_only=True, required=False, allow_null=True
     )
+
     reviewer_id = serializers.PrimaryKeyRelatedField(
         queryset = User.objects.all(), write_only=True, required=False, allow_null=True
     )
@@ -82,6 +82,13 @@ class TaskSerializer(serializers.ModelSerializer):
             "assignee", "reviewer", "due_date", "comments_count",
             "assignee_id", "reviewer_id"
         ]
+
+    def to_internal_value(self, data):
+        """Intercepts input data to enforce an HTTP 404 response if the referenced board ID does not exist."""
+        board_id = data.get("board")
+        if board_id and not Board.objects.filter(id=board_id).exists():
+            raise NotFound(detail="Board not found")
+        return super().to_internal_value(data)
 
     def get_comments_count(self, obj):
         """Returns the total number of comments associated with the task."""
@@ -128,6 +135,7 @@ class BoardUpdateSerializer(serializers.ModelSerializer):
             if key not in self.Meta.fields and key != "members":
                 raise serializers.ValidationError({key: f"Field '{key}' doesnt exist"})
         member_ids = self.initial_data.get("members", None)
+
         if member_ids is not None:
             if not isinstance(member_ids, list):
                 raise serializers.ValidationError({"members" : "Members should be in a list"})
